@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.gedoor.monkeybook"
+        applicationId "com.kunfei.monkeybook"
         minSdkVersion 19
         targetSdkVersion 28
         versionCode 10000 + gitCommits
@@ -47,7 +47,7 @@ android {
         }
         debug {
             signingConfig signingConfigs.myConfig
-            applicationIdSuffix '.debug'
+//            applicationIdSuffix '.debug'
             versionNameSuffix 'debug'
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
