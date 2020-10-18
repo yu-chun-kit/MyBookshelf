@@ -35,6 +35,7 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
 import com.hwangjr.rxbus.RxBus;
+//import com.hwangjr.rxbus.BuildConfig;
 import com.kunfei.bookshelf.BuildConfig;
 import com.kunfei.bookshelf.DbHelper;
 import com.kunfei.bookshelf.MApplication;
