@@ -2,14 +2,17 @@ package com.kunfei.bookshelf.view.fragment;
 
 import android.graphics.PorterDuff;
 import android.os.Environment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.kunfei.basemvplib.impl.IPresenter;
 import com.kunfei.bookshelf.R;
+import com.kunfei.bookshelf.databinding.FragmentFileCategoryBinding;
 import com.kunfei.bookshelf.help.BookshelfHelp;
 import com.kunfei.bookshelf.help.FileHelp;
 import com.kunfei.bookshelf.utils.FileStack;
@@ -28,28 +31,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.Unbinder;
-
 public class FileCategoryFragment extends BaseFileFragment {
     private static final String TAG = "FileCategoryFragment";
-    @BindView(R.id.file_category_tv_path)
-    TextView mTvPath;
-    @BindView(R.id.file_category_tv_back_last)
-    TextView mTvBackLast;
-    @BindView(R.id.file_category_rv_content)
-    RecyclerView mRvContent;
-    @BindView(R.id.tv_sd)
-    TextView tvSd;
 
-    private Unbinder unbinder;
+    private FragmentFileCategoryBinding binding;
     private FileStack mFileStack;
     private String rootFilePath;
 
     @Override
-    public int createLayoutId() {
-        return R.layout.fragment_file_category;
+    protected View createView(LayoutInflater inflater, ViewGroup container) {
+        binding = FragmentFileCategoryBinding.inflate(inflater, container, false);
+        return binding.getRoot();
     }
 
     /**
@@ -63,17 +55,16 @@ public class FileCategoryFragment extends BaseFileFragment {
     @Override
     protected void bindView() {
         super.bindView();
-        unbinder = ButterKnife.bind(this, view);
         mFileStack = new FileStack();
         setUpAdapter();
     }
 
     private void setUpAdapter() {
         mAdapter = new FileSystemAdapter();
-        mRvContent.setLayoutManager(new LinearLayoutManager(getContext()));
-        mRvContent.addItemDecoration(new DividerItemDecoration(Objects.requireNonNull(getContext())));
-        mRvContent.setAdapter(mAdapter);
-        setTextViewIconColor(mTvBackLast);
+        binding.fileCategoryRvContent.setLayoutManager(new LinearLayoutManager(getContext()));
+        binding.fileCategoryRvContent.addItemDecoration(new DividerItemDecoration(Objects.requireNonNull(getContext())));
+        binding.fileCategoryRvContent.setAdapter(mAdapter);
+        setTextViewIconColor(binding.fileCategoryTvBackLast);
     }
 
     @Override
@@ -85,9 +76,9 @@ public class FileCategoryFragment extends BaseFileFragment {
                     if (file.isDirectory()) {
                         //保存当前信息。
                         FileStack.FileSnapshot snapshot = new FileStack.FileSnapshot();
-                        snapshot.filePath = mTvPath.getText().toString();
+                        snapshot.filePath = binding.fileCategoryTvPath.getText().toString();
                         snapshot.files = new ArrayList<>(mAdapter.getItems());
-                        snapshot.scrollOffset = mRvContent.computeVerticalScrollOffset();
+                        snapshot.scrollOffset = binding.fileCategoryRvContent.computeVerticalScrollOffset();
                         mFileStack.push(snapshot);
                         //切换下一个文件
                         toggleFileTree(file);
@@ -108,21 +99,21 @@ public class FileCategoryFragment extends BaseFileFragment {
                 }
         );
 
-        mTvBackLast.setOnClickListener(v -> {
-                    FileStack.FileSnapshot snapshot = mFileStack.pop();
-                    int oldScrollOffset = mRvContent.computeHorizontalScrollOffset();
-                    if (snapshot == null) return;
-                    mTvPath.setText(snapshot.filePath);
-                    mAdapter.refreshItems(snapshot.files);
-                    mRvContent.scrollBy(0, snapshot.scrollOffset - oldScrollOffset);
-                    //反馈
-                    if (mListener != null) {
-                        mListener.onCategoryChanged();
-                    }
+        binding.fileCategoryTvBackLast.setOnClickListener(v -> {
+            FileStack.FileSnapshot snapshot = mFileStack.pop();
+            int oldScrollOffset = binding.fileCategoryRvContent.computeHorizontalScrollOffset();
+            if (snapshot == null) return;
+            binding.fileCategoryTvPath.setText(snapshot.filePath);
+            mAdapter.refreshItems(snapshot.files);
+            binding.fileCategoryRvContent.scrollBy(0, snapshot.scrollOffset - oldScrollOffset);
+            //反馈
+            if (mListener != null) {
+                mListener.onCategoryChanged();
+            }
                 }
         );
 
-        tvSd.setOnClickListener(v -> {
+        binding.tvSd.setOnClickListener(v -> {
             if (getContext() != null) {
                 List<String> list = FileUtils.getStorageData(getContext());
                 if (list != null) {
@@ -155,12 +146,13 @@ public class FileCategoryFragment extends BaseFileFragment {
         // textView.getCompoundDrawables()[0].mutate();
         try {
             textView.getCompoundDrawables()[0].setColorFilter(getResources().getColor(R.color.tv_text_default), PorterDuff.Mode.SRC_ATOP);
-        } catch (Exception e) {}
+        } catch (Exception ignored) {
+        }
     }
 
     private void toggleFileTree(File file) {
         //路径名
-        mTvPath.setText(file.getPath().replace(rootFilePath, ""));
+        binding.fileCategoryTvPath.setText(file.getPath().replace(rootFilePath, ""));
         //获取数据
         File[] files = file.listFiles(new SimpleFileFilter());
         //转换成List
@@ -190,11 +182,11 @@ public class FileCategoryFragment extends BaseFileFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        unbinder.unbind();
+        binding = null;
     }
 
 
-    public class FileComparator implements Comparator<File> {
+    public static class FileComparator implements Comparator<File> {
         @Override
         public int compare(File o1, File o2) {
             if (o1.isDirectory() && o2.isFile()) {
@@ -207,7 +199,7 @@ public class FileCategoryFragment extends BaseFileFragment {
         }
     }
 
-    public class SimpleFileFilter implements FileFilter {
+    public static class SimpleFileFilter implements FileFilter {
         @Override
         public boolean accept(File pathname) {
             if (pathname.getName().startsWith(".")) {

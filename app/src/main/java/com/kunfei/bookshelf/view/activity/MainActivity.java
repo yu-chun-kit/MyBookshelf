@@ -23,16 +23,11 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatImageView;
-import androidx.appcompat.widget.Toolbar;
-import androidx.cardview.widget.CardView;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
 import com.hwangjr.rxbus.RxBus;
 //import com.hwangjr.rxbus.BuildConfig;
@@ -42,12 +37,14 @@ import com.kunfei.bookshelf.MApplication;
 import com.kunfei.bookshelf.R;
 import com.kunfei.bookshelf.base.BaseTabActivity;
 import com.kunfei.bookshelf.constant.RxBusTag;
+import com.kunfei.bookshelf.databinding.ActivityMainBinding;
 import com.kunfei.bookshelf.help.FileHelp;
 import com.kunfei.bookshelf.help.ProcessTextHelp;
 import com.kunfei.bookshelf.help.permission.Permissions;
 import com.kunfei.bookshelf.help.permission.PermissionsCompat;
 import com.kunfei.bookshelf.help.storage.BackupRestoreUi;
 import com.kunfei.bookshelf.model.UpLastChapterModel;
+import com.kunfei.bookshelf.presenter.BookSourcePresenter;
 import com.kunfei.bookshelf.presenter.MainPresenter;
 import com.kunfei.bookshelf.presenter.contract.MainContract;
 import com.kunfei.bookshelf.service.WebService;
@@ -64,8 +61,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
 import kotlin.Unit;
 
 import static com.kunfei.bookshelf.utils.NetworkUtils.isNetWorkAvailable;
@@ -74,18 +69,9 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
         BookListFragment.CallbackValue {
     private final int requestSource = 14;
     private String[] mTitles;
+    private final int REQUEST_QR = 202;
 
-    @BindView(R.id.drawer)
-    DrawerLayout drawer;
-    @BindView(R.id.navigation_view)
-    NavigationView navigationView;
-    @BindView(R.id.toolbar)
-    Toolbar toolbar;
-    @BindView(R.id.main_view)
-    CoordinatorLayout mainView;
-    @BindView(R.id.card_search)
-    CardView cardSearch;
-
+    private ActivityMainBinding binding;
     private AppCompatImageView vwNightTheme;
     private int group;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -117,8 +103,8 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
     @Override
     protected void onCreateActivity() {
         getWindow().getDecorView().setBackgroundColor(ThemeStore.backgroundColor(this));
-        setContentView(R.layout.activity_main);
-        ButterKnife.bind(this);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
     }
 
     @Override
@@ -126,7 +112,6 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
         super.onResume();
 
         String shared_url = preferences.getString("shared_url", "");
-        assert shared_url != null;
         if (shared_url.length() > 1) {
             InputDialog.builder(this)
                     .setTitle(getString(R.string.add_book_url))
@@ -204,20 +189,20 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
     @Override
     protected void bindView() {
         super.bindView();
-        setSupportActionBar(toolbar);
+        setSupportActionBar(binding.mainView.toolbar);
         setupActionBar();
-        cardSearch.setCardBackgroundColor(ThemeStore.primaryColorDark(this));
+        binding.mainView.cardSearch.setCardBackgroundColor(ThemeStore.primaryColorDark(this));
         initDrawer();
         initTabLayout();
         upGroup(group);
         moDialogHUD = new MoDialogHUD(this);
         if (!preferences.getBoolean("behaviorMain", true)) {
-            AppBarLayout.LayoutParams params = (AppBarLayout.LayoutParams) toolbar.getLayoutParams();
+            AppBarLayout.LayoutParams params = (AppBarLayout.LayoutParams) binding.mainView.toolbar.getLayoutParams();
             params.setScrollFlags(0);
         }
         //点击跳转搜索页
-        cardSearch.setOnClickListener(view -> startActivityByAnim(new Intent(this, SearchBookActivity.class),
-                toolbar, "sharedView", android.R.anim.fade_in, android.R.anim.fade_out));
+        binding.mainView.cardSearch.setOnClickListener(view -> startActivityByAnim(new Intent(this, SearchBookActivity.class),
+                binding.mainView.toolbar, "sharedView", android.R.anim.fade_in, android.R.anim.fade_out));
     }
 
     //初始化TabLayout和ViewPager
@@ -446,6 +431,11 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
                             }
                         }).show();
                 break;
+            case R.id.action_add_qrcode:
+
+                Intent intent = new Intent(this, QRCodeScanActivity.class);
+                startActivityForResult(intent, REQUEST_QR);
+                break;
             case R.id.action_download_all:
                 if (!isNetWorkAvailable()) {
                     toast(R.string.network_connection_unavailable);
@@ -468,10 +458,10 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
                 }
                 break;
             case android.R.id.home:
-                if (drawer.isDrawerOpen(GravityCompat.START)) {
-                    drawer.closeDrawers();
+                if (binding.drawer.isDrawerOpen(GravityCompat.START)) {
+                    binding.drawer.closeDrawers();
                 } else {
-                    drawer.openDrawer(GravityCompat.START, !MApplication.isEInkMode);
+                    binding.drawer.openDrawer(GravityCompat.START, !MApplication.isEInkMode);
                 }
                 break;
         }
@@ -488,9 +478,9 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
 
     //初始化侧边栏
     private void initDrawer() {
-        mDrawerToggle = new ActionBarDrawerToggle(this, drawer, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        mDrawerToggle = new ActionBarDrawerToggle(this, binding.drawer, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         mDrawerToggle.syncState();
-        drawer.addDrawerListener(mDrawerToggle);
+        binding.drawer.addDrawerListener(mDrawerToggle);
 
         setUpNavigationView();
     }
@@ -520,19 +510,19 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
      * 侧边栏按钮
      */
     private void setUpNavigationView() {
-        navigationView.setBackgroundColor(ThemeStore.backgroundColor(this));
-        NavigationViewUtil.setItemIconColors(navigationView, getResources().getColor(R.color.tv_text_default), ThemeStore.accentColor(this));
-        NavigationViewUtil.disableScrollbar(navigationView);
+        binding.navigationView.setBackgroundColor(ThemeStore.backgroundColor(this));
+        NavigationViewUtil.setItemIconColors(binding.navigationView, getResources().getColor(R.color.tv_text_default), ThemeStore.accentColor(this));
+        NavigationViewUtil.disableScrollbar(binding.navigationView);
         @SuppressLint("InflateParams") View headerView = LayoutInflater.from(this).inflate(R.layout.navigation_header, null);
         AppCompatImageView imageView = headerView.findViewById(R.id.iv_read);
         imageView.setColorFilter(ThemeStore.accentColor(this));
-        navigationView.addHeaderView(headerView);
-        Menu drawerMenu = navigationView.getMenu();
+        binding.navigationView.addHeaderView(headerView);
+        Menu drawerMenu = binding.navigationView.getMenu();
         vwNightTheme = drawerMenu.findItem(R.id.action_theme).getActionView().findViewById(R.id.iv_theme_day_night);
         upThemeVw();
         vwNightTheme.setOnClickListener(view -> setNightTheme(!isNightTheme()));
-        navigationView.setNavigationItemSelectedListener(menuItem -> {
-            drawer.closeDrawer(GravityCompat.START, !MApplication.isEInkMode);
+        binding.navigationView.setNavigationItemSelectedListener(menuItem -> {
+            binding.drawer.closeDrawer(GravityCompat.START, !MApplication.isEInkMode);
             switch (menuItem.getItemId()) {
                 case R.id.action_book_source_manage:
                     handler.postDelayed(() -> BookSourceActivity.startThis(this, requestSource), 200);
@@ -642,8 +632,8 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
             return true;
         } else {
             if (keyCode == KeyEvent.KEYCODE_BACK) {
-                if (drawer.isDrawerOpen(GravityCompat.START)) {
-                    drawer.closeDrawer(GravityCompat.START, !MApplication.isEInkMode);
+                if (binding.drawer.isDrawerOpen(GravityCompat.START)) {
+                    binding.drawer.closeDrawer(GravityCompat.START, !MApplication.isEInkMode);
                     return true;
                 }
                 exit();
@@ -658,7 +648,7 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
      */
     public void exit() {
         if ((System.currentTimeMillis() - exitTime) > 2000) {
-            showSnackBar(toolbar, getString(R.string.double_click_exit));
+            showSnackBar(binding.mainView.toolbar, getString(R.string.double_click_exit));
             exitTime = System.currentTimeMillis();
         } else {
             finish();
@@ -687,6 +677,22 @@ public class MainActivity extends BaseTabActivity<MainContract.Presenter> implem
                     FindBookFragment findBookFragment = getFindFragment();
                     if (findBookFragment != null) {
                         findBookFragment.refreshData();
+                    }
+                }
+                break;
+            case REQUEST_QR:
+                if (resultCode == RESULT_OK) {
+                    String result = data.getStringExtra("result");
+                    if (!StringUtils.isTrimEmpty(result)) {
+                        result=result.trim();
+                        // 如果只有书源,则导入书源
+                        if(result.replaceAll("(\\s|\n)*","").matches("^\\{.*$")) {
+                            new BookSourcePresenter().importBookSource(result);
+                            break;
+                        }
+//                        String[] string=result.split("#",2);
+//                        mPresenter.addBookUrl(string[0]);
+                        mPresenter.addBookUrl(result);
                     }
                 }
                 break;

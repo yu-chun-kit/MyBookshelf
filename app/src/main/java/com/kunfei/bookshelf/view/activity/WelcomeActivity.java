@@ -5,22 +5,18 @@ import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.widget.ImageView;
 
 import com.kunfei.basemvplib.impl.IPresenter;
 import com.kunfei.bookshelf.DbHelper;
 import com.kunfei.bookshelf.R;
 import com.kunfei.bookshelf.base.MBaseActivity;
+import com.kunfei.bookshelf.databinding.ActivityWelcomeBinding;
 import com.kunfei.bookshelf.presenter.ReadBookPresenter;
 import com.kunfei.bookshelf.utils.theme.ThemeStore;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
+public class WelcomeActivity extends MBaseActivity<IPresenter> {
 
-public class WelcomeActivity extends MBaseActivity {
-
-    @BindView(R.id.iv_bg)
-    ImageView ivBg;
+    private ActivityWelcomeBinding binding;
 
     @Override
     protected IPresenter initInjector() {
@@ -34,15 +30,16 @@ public class WelcomeActivity extends MBaseActivity {
             finish();
             return;
         }
-        setContentView(R.layout.activity_welcome);
+        binding = ActivityWelcomeBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
         AsyncTask.execute(DbHelper::getDaoSession);
-        ButterKnife.bind(this);
-        ivBg.setColorFilter(ThemeStore.accentColor(this));
+        binding.tvGzh.setTextColor(ThemeStore.accentColor(this));
+        binding.ivBg.setColorFilter(ThemeStore.accentColor(this));
         ValueAnimator welAnimator = ValueAnimator.ofFloat(1f, 0f).setDuration(800);
         welAnimator.setStartDelay(500);
         welAnimator.addUpdateListener(animation -> {
             float alpha = (Float) animation.getAnimatedValue();
-            ivBg.setAlpha(alpha);
+            binding.ivBg.setAlpha(alpha);
         });
         welAnimator.addListener(new Animator.AnimatorListener() {
             @Override
