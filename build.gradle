@@ -18,6 +18,10 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'de.timfreiheit.resourceplaceholders:placeholders:0.3'
     }
+//    tasks.withType(JavaCompile){
+//        options.compilerArgs << "-Xlint:deprecation"
+//        options.compilerArgs << "-Xlint:unchecked"
+//    }
 }
 
 allprojects {
